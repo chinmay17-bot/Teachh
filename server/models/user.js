@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema({
   courseProgess: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "CourseProgress",
-  },
+  }
 });
 
 module.exports= mongoose.exports("User", userSchema);
