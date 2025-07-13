@@ -30,3 +30,5 @@ const mailSender= async (
         console.log(err.message);
     }
 }
+
+module.exports= mailSender;
