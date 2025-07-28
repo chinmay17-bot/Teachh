@@ -25,6 +25,8 @@ exports.auth = async (req, res, next) => {
 
       //   this decode will hace values from the part in Generate JWT token
       console.log(decode);
+
+      //this is used in course and more to check user 
       req.user = decode;
     } catch (error) {
       return res.status(401).json({
