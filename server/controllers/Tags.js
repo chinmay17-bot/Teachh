@@ -1,5 +1,6 @@
 const Tag = require("../models/tag");
 
+//Change tags to category
 exports.createTag = async (req, res) => {
   try {
     //fetch
