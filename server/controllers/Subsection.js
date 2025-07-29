@@ -10,14 +10,14 @@ require("dotenv").config;
 exports.createSubSection = async (req, res) => {
   try {
     //fetch details
-    const { sectionId, title, timeDuration, description } = req.body;
+    const { sectionId, title, description } = req.body;
     //for video extract file
     const video = req.files.videoFile;
 
     //validaiton
 
-    if (!sectionId || !title || !timeDuration || !description) {
-      return res.status(500).json({
+    if (!sectionId || !title || !description) {
+      return res.status(404).json({
         success: false,
         message: "All details are required",
       });
@@ -31,7 +31,7 @@ exports.createSubSection = async (req, res) => {
     //create
     const subSectionDetails = await SubSection.create({
       title: title,
-      timeDuration: timeDuration,
+      timeDuration: `${uploadDetails.duration}`,
       description: description,
       videoUrl: uploadDetails.secure_url,
     });
@@ -53,12 +53,13 @@ exports.createSubSection = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "subsection created",
+      data:updatedSection
     });
 
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "internal server error",
     });
   }
 };
@@ -107,6 +108,7 @@ exports.updateSubSection = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "subsection updated",
+      data:updatedSection
     });
   } catch (error) {
     console.error("Error updating subsection:", error);
@@ -121,7 +123,7 @@ exports.updateSubSection = async (req, res) => {
 exports.deleteSubSection = async (req, res) => {
   try {
     const { sectionId, subSectionId } = req.body;
-    const updateSection = await Section.findByIdAndUpdate(
+    await Section.findByIdAndUpdate(
       { _id: sectionId },
       {
         $pull: {
@@ -146,6 +148,7 @@ exports.deleteSubSection = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "subsection deleted",
+      data:updatedSection
     }); 
   } catch (error) {
     console.error("Error delete subsection:", error);

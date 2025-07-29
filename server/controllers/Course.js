@@ -1,20 +1,35 @@
 const Course = require("../models/course");
 const User = require("../models/user");
-const Tag = require("../models/tag");
-require("dotenv").config;
-
+const Category = require("../models/category");
+const CourseProgress = require("../models/courseProgress");
+const Section = require("../models/section");
+const SubSection = require("../models/subSection");
+const { convertSecondsToDuration } = require("../utils/secToDuration");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
 
+require("dotenv").config;
 //create course
 //complex
 exports.createCourse = async (req, res) => {
   try {
     //fetch data
-    const { courseName, courseDescription, whatWillYouLearn, price, tag } =
-      req.body;
+    const {
+      courseName,
+      courseDescription,
+      whatWillYouLearn,
+      price,
+      tag: _tag,
+      category,
+      status,
+      instructions: _instructions,
+    } = req.body;
 
     //get thubmnail
     const thubmnail = req.files.thumbnailImage;
+
+    //convert the stringify array to array
+    const tag = JSON.parse(_tag);
+    const instructions = JSON.parse(_instructions);
 
     //validation
     if (
@@ -22,7 +37,9 @@ exports.createCourse = async (req, res) => {
       !courseDescription ||
       !whatWillYouLearn ||
       !price ||
-      !tag
+      !tag.length ||
+      !category ||
+      !instructions.length
     ) {
       return res.status(400).json({
         success: false,
@@ -30,13 +47,20 @@ exports.createCourse = async (req, res) => {
       });
     }
 
+    if(!status || status=== undefined){
+      status="Draft"
+    }
+
     //check for instructor
     const userId = req.user.id;
-    const instructorDetails = await User.findById(userId);
+
+    //user must be instructor
+    const instructorDetails = await User.findById(userId,{
+      accountType:"Instructor",
+    });
     console.log(instructorDetails);
 
-    //TODO CHECK IF USER ID AND INSTRUCTOR ID ARE SAME OR DIFF 
-
+    //TODO CHECK IF USER ID AND INSTRUCTOR ID ARE SAME OR DIFF
 
     if (!instructorDetails) {
       return res.status(400).json({
@@ -46,11 +70,11 @@ exports.createCourse = async (req, res) => {
     }
 
     //tag validation
-    const tagDetails = await Tag.findById(tag);
-    if (!tagDetails) {
+    const categoryDetails = await Category.findById(category);
+    if (!categoryDetails) {
       return res.status(400).json({
         success: false,
-        message: "Tag not found",
+        message: "category not found",
       });
     }
 
@@ -67,8 +91,11 @@ exports.createCourse = async (req, res) => {
       instructor: instructorDetails._id,
       whatWillYouLearn: whatWillYouLearn,
       price,
-      tag: tagDetails._id,
+      tag,
+      category: categoryDetails._id,
       thubmnail: thumbnailImage.secure_url,
+      status:status,
+      instructions
     });
 
     //add the new course for the instructor
@@ -87,9 +114,9 @@ exports.createCourse = async (req, res) => {
     );
 
     //MAY BE WRONG
-    await Tag.findByIdandUpdate(
+    await categoryDetails.findByIdandUpdate(
       {
-        _id: tag,
+        _id: category,
       },
       {
         $push: {
@@ -103,6 +130,7 @@ exports.createCourse = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      data:newCourse,
       message: "Successfully added Course",
     });
   } catch (error) {
@@ -131,12 +159,11 @@ exports.getAllCourses = async (req, res) => {
     //   .populate("instructor")
     //   .exec();
 
-        const allCourses =  await Course.find({});
+    const allCourses = await Course.find({});
     return res.status(200).json({
       success: true,
       message: "Successfully fetched Course",
     });
-
   } catch (error) {
     return res.status(500).json({
       success: fail,

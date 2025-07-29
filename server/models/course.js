@@ -48,6 +48,17 @@ const courseSchema = new mongoose.Schema({
       required: true,
     },
   ],
+  instructions:{
+    type:[String],
+  },
+  status:{
+    type:String,
+    enum:["Draft","Pubished"]
+  },
+  createdAt:{
+    type:Date,
+    default:Date.now
+  }
 });
 
-module.exports = mongoose.exports("CourseSchema", courseSchema);
+module.exports = mongoose.exports("Course", courseSchema);

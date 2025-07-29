@@ -28,7 +28,14 @@ exports.createSection = async (req, res) => {
       {
         new: true,
       }
-    );
+    ).populate(
+      {
+        path:"courseContent",
+        populate:{
+          path:"subSection"
+        }
+      }
+    ).exec();
     //hw use populate to replace section/subSection both in updated course detatisl
     return res.status(200).json(
         {
@@ -80,15 +87,42 @@ exports.updateSection = async (req, res) => {
 }
 
 // DELETE a section
+//todo:do we need to delete the object id from course schema as well (done below)
 exports.deleteSection = async (req, res) => {
   try {
     const { sectionId, courseId } = req.params
-    await Section.findByIdAndDelete(sectionId)
+    await Course.findByIdAndUpdate(courseId ,{
+        $pull:{
+          courseContent:sectionId
+        }
+      })
+    const section= await Section.findById(sectionId);
+    if(!section){
+      return res.status(404).json(
+        {
+          success:false,
+          message:"section not found"
+        }
+      )
+    }
 
-    //todo:do we need to delete the object id from course schema as well
+    await SubSection.deleteMany({_id:{$in:section.subSection}});
+    await Section.findByIdAndDelete(sectionId);
+
+    //update the course
+    const course= await Course.findById(courseId).populate(
+      {
+        path:"courseContent",
+        populate:{
+          path:"subSection"
+        }
+      }
+    ).exec()
+
     res.status(200).json({
       success: true,
       message: "Section deleted", 
+      data:course
     })
 
     

@@ -3,7 +3,7 @@ const User = require("../models/user");
 const Profile = require("../models/profile");
 const OTP = require("../models/otp");
 const otpGenerator = require("otp-generator");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config;
 
@@ -253,13 +253,77 @@ exports.login = async (req, res) => {
 };
 
 //change password
-exports.changePassword = async (req, res) =>{
+exports.changePassword = async (req, res) => {
+  try {
     //get data from req body
+    const userId = req.user.id;
+
+    //validate user
+    const { userDetails } = await User.findById(userId);
+    if (!userDetails) {
+      return res.status(404).json({
+        success: false,
+        messsage: "User not found",
+      });
+    }
+
+
     //get oldpassword , newpassword , confirmnewpassword
-    //validation
+    const { oldPassword, newPassword } = req.body;
+    
+    //validation password
+    const isPasswordMatch = await bcrypt.compare(
+      oldPassword,
+      userDetails.password
+    );
+    if(!isPasswordMatch){
+      return res.status(401).json(
+        {
+          success:false,
+          message:"password doestnot match"
+        }
+      )
+    }
+    // Update password
+    const encryptedPassword = await bcrypt.hash(newPassword, 10)
+      //update password in db
+    const updatedUserDetails = await User.findByIdAndUpdate(
+      req.user.id,
+      { password: encryptedPassword },
+      { new: true }
+    )
 
-    //update password in db
+    // Send notification email
+    try {
+      const emailResponse = await mailSender(
+        updatedUserDetails.email,
+        "Password has been updated successfully",
+        passwordUpdated(
+          updatedUserDetails.email,
+          `Password updated successfully for ${updatedUserDetails.firstName} ${updatedUserDetails.lastName}`
+        )
+      )
+      console.log("Email sent successfully:", emailResponse.response)
+    } catch (error) {
+      console.error("Error occurred while sending email:", error)
+      return res.status(500).json({
+        success: false,
+        message: "Error occurred while sending email",
+        error: error.message,
+      })
+    }
 
-    //send mail
-    //return response 
-} 
+    
+  //return response
+    return res
+      .status(200)
+      .json({ success: true, message: "Password updated successfully" })
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "internal server error in updating password",
+    });
+  }
+  
+};
