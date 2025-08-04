@@ -25,6 +25,14 @@ const userSchema = new mongoose.Schema({
     enum: ["Student", "Admin", "Instructor"],
     required: true,
   },
+  active:{
+    type:Boolean,
+    default:true,
+  },
+  approved:{
+    type:Boolean,
+    default:true,
+  },
   additionalDetails: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Profile",
@@ -38,7 +46,6 @@ const userSchema = new mongoose.Schema({
   ],
   image: {
     type: String,
-    require: true,
   },
   token :{
     type:String

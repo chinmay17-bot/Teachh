@@ -70,7 +70,7 @@ exports.categoryPageDetails = async (req, res) => {
     //fetch courses of that category
     const selectedCategory = await Category.findById(categoryId)
       .populate({
-        path: "courses",
+        path: "courses", 
         match: { status: "published" },
         populate: "ratingAndReviews",
       })

@@ -47,16 +47,16 @@ exports.createCourse = async (req, res) => {
       });
     }
 
-    if(!status || status=== undefined){
-      status="Draft"
+    if (!status || status === undefined) {
+      status = "Draft";
     }
 
     //check for instructor
     const userId = req.user.id;
 
     //user must be instructor
-    const instructorDetails = await User.findById(userId,{
-      accountType:"Instructor",
+    const instructorDetails = await User.findById(userId, {
+      accountType: "Instructor",
     });
     console.log(instructorDetails);
 
@@ -94,8 +94,8 @@ exports.createCourse = async (req, res) => {
       tag,
       category: categoryDetails._id,
       thubmnail: thumbnailImage.secure_url,
-      status:status,
-      instructions
+      status: status,
+      instructions,
     });
 
     //add the new course for the instructor
@@ -130,7 +130,7 @@ exports.createCourse = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data:newCourse,
+      data: newCourse,
       message: "Successfully added Course",
     });
   } catch (error) {
@@ -173,4 +173,45 @@ exports.getAllCourses = async (req, res) => {
   }
 };
 
+exports.getCourseDetails = async (req, res) => {
+  try {
+    const { courseId } = req.body;
 
+    //we use nested populate to fill data nested in
+    const courseDetails = await Course.find({ _id: courseId })
+      .populate({
+        path: "instructor",
+        populate: {
+          path: "additionalDetails",
+        },
+      })
+      .populate("category")
+      .populate("ratingAndReviews")
+      .populate({
+        path: "courseContent",
+        populate: {
+          path: "subSection",
+        },
+      })
+      .exec();
+
+    //performing validations
+    if (!courseDetails) {
+      return res.status(400).json({
+        success: false,
+        message: `could not find course ${courseId}`,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "course detils returned",
+      data: courseDetails,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
